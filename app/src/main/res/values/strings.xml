@@ -3,4 +3,13 @@
     <string name="title_home">Home</string>
     <string name="title_dashboard">Dashboard</string>
     <string name="title_notifications">Notifications</string>
+    <string name="title_activity_encryption">EncryptionActivity</string>
+    <string name="title_activity_decryption">Decryption</string>
+    <string name="title_activity_info">InfoActivity</string>
+    <string name="encrypt_button">Encrypt</string>
+    <string name="decrypt_button">Decrypt</string>
+    <string name="info_button">Info</string>
+    <string name="upload_button">Upload</string>
+    <string name="key_input">Enter Secret Key</string>
+    <string name="message_input">Enter Secret Message</string>
 </resources>
