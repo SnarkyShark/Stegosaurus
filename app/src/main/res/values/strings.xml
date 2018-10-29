@@ -6,6 +6,7 @@
     <string name="title_activity_encryption">EncryptionActivity</string>
     <string name="title_activity_decryption">Decryption</string>
     <string name="title_activity_info">InfoActivity</string>
+    <string name="encrypt_message">Encrypt Time!</string>
     <string name="encrypt_button">Encrypt</string>
     <string name="decrypt_button">Decrypt</string>
     <string name="info_button">Info</string>
