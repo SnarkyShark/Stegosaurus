@@ -10,11 +10,14 @@ import android.os.Handler;
 import android.os.Message;
 import android.provider.MediaStore;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -31,7 +34,8 @@ public class EncryptFragment extends Fragment {
 
     Button button, testButton;
     TextView t;
-    String message = "", image_name_tv="";
+    String message, key;
+    EditText msg_box, key_box;
     boolean changed = false;
     View v;
 
@@ -48,7 +52,11 @@ public class EncryptFragment extends Fragment {
         // Inflate the layout for this fragment
         v = inflater.inflate(R.layout.fragment_encrypt, container, false);
 
+        message = "";
+        key = "";
         t = v.findViewById(R.id.encryptTime);
+        msg_box = v.findViewById(R.id.msgEditText);
+        key_box = v.findViewById(R.id.keyEditText);
 
         button = v.findViewById(R.id.encryptButton);
         button.setOnClickListener(new View.OnClickListener() {
@@ -62,7 +70,7 @@ public class EncryptFragment extends Fragment {
         testButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                sendInputs();
+                //sendInputs();
             }
         });
 
@@ -70,6 +78,16 @@ public class EncryptFragment extends Fragment {
     }
 
     public void sendInputs() {
+
+        message = msg_box.getText().toString();
+        key = key_box.getText().toString();
+
+        if (message.compareTo("") == 0 || key.compareTo("") == 0)
+            Toast.makeText(getActivity(), "Please fill out all fields before encrypting", Toast.LENGTH_SHORT).show();
+        else {
+            Toast.makeText(getActivity(), "Cool. Encrypting...", Toast.LENGTH_SHORT).show();
+        }
+
         /*
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("image/*");

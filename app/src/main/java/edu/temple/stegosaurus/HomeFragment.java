@@ -11,10 +11,10 @@ import android.view.ViewGroup;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class InfoFragment extends Fragment {
+public class HomeFragment extends Fragment {
 
 
-    public InfoFragment() {
+    public HomeFragment() {
         // Required empty public constructor
     }
 
@@ -22,7 +22,7 @@ public class InfoFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         ViewGroup rootView = (ViewGroup) inflater.inflate(
-                R.layout.fragment_tabs, container, false);
+                R.layout.fragment_home, container, false);
 
         return rootView;
     }

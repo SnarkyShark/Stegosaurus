@@ -14,4 +14,6 @@
     <string name="key_input">Enter Secret Key</string>
     <string name="message_input">Enter Secret Message</string>
     <string name="test_button">DO ENCRYPTION</string>
+    <string name="encrypt_arrow">&lt;&#8212;Left to Encrypt</string>
+    <string name="decrypt_arrow">Right to Decrypt&#8212;&gt;</string>
 </resources>

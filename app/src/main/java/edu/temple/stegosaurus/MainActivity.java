@@ -7,13 +7,6 @@ import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
-import android.view.View;
-import android.widget.TextView;
-
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -57,8 +50,8 @@ public class MainActivity extends AppCompatActivity {
             Fragment retval;
 
             switch (position) {
-                case 1: retval = new DecryptFragment(); break;
-                case 2: retval = new InfoFragment(); break;
+                case 1: retval = new HomeFragment(); break;
+                case 2: retval = new DecryptFragment(); break;
                 default: retval = new EncryptFragment(); break;
             }
             return retval;
