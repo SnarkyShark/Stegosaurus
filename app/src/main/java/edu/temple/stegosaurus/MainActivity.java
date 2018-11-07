@@ -39,7 +39,8 @@ public class MainActivity extends AppCompatActivity {
         viewPager = findViewById(R.id.pager);
         mPagerAdapter = new ScreenSlidePagerAdapter(getSupportFragmentManager());
         viewPager.setAdapter(mPagerAdapter);
-
+        viewPager.setCurrentItem(1);    // how to set first page loaded
+        //TODO: change views to mirror iPhone app
     }
 
     /**
