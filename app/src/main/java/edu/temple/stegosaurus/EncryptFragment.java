@@ -26,6 +26,12 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
+
 
 /**
  * A simple {@link Fragment} subclass.
@@ -71,10 +77,36 @@ public class EncryptFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 //sendInputs();
+                testRetro();
             }
         });
 
         return v;
+    }
+
+    public void testRetro() {
+        Retrofit.Builder builder = new Retrofit.Builder()
+                .baseUrl("https://stegosaurus.ml")
+                .addConverterFactory(GsonConverterFactory.create());
+
+        Retrofit retrofit = builder.build();
+
+        StegosaurusService client = retrofit.create(StegosaurusService.class);
+        Call<String> call = client.basicResponse();
+
+        call.enqueue(new Callback<String>() {
+            @Override
+            public void onResponse(Call<String> call, Response<String> response) {
+                Message msg = Message.obtain();
+                msg.obj = response.body();
+                networkHandler.sendMessage(msg);
+            }
+
+            @Override
+            public void onFailure(Call<String> call, Throwable t) {
+                Toast.makeText(getActivity(), "something went wrong", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     public void sendInputs() {
@@ -88,10 +120,10 @@ public class EncryptFragment extends Fragment {
             Toast.makeText(getActivity(), "Cool. Encrypting...", Toast.LENGTH_SHORT).show();
         }
 
-        /*
+
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("image/*");
-        startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE); */
+        startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE);
     }
 
     public void test() {
