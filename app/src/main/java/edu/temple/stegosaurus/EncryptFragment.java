@@ -4,6 +4,9 @@ package edu.temple.stegosaurus;
 import android.app.Activity;
 import android.content.Intent;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.media.Image;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -20,12 +23,15 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import okhttp3.RequestBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -68,7 +74,7 @@ public class EncryptFragment extends Fragment {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                test();
+                testRetro();
             }
         });
 
@@ -76,12 +82,25 @@ public class EncryptFragment extends Fragment {
         testButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //sendInputs();
-                testRetro();
+                testInputs();
             }
         });
 
         return v;
+    }
+
+    public void testInputs() {
+        Retrofit.Builder builder = new Retrofit.Builder()
+                .baseUrl("https://stegosaurus.ml")
+                .addConverterFactory(GsonConverterFactory.create());
+
+        Retrofit retrofit = builder.build();
+
+        StegosaurusService client = retrofit.create(StegosaurusService.class);
+
+        //get images
+        //create call --> method
+        //enqueue call
     }
 
     public void testRetro() {
@@ -107,62 +126,6 @@ public class EncryptFragment extends Fragment {
                 Toast.makeText(getActivity(), "something went wrong", Toast.LENGTH_SHORT).show();
             }
         });
-    }
-
-    public void sendInputs() {
-
-        message = msg_box.getText().toString();
-        key = key_box.getText().toString();
-
-        if (message.compareTo("") == 0 || key.compareTo("") == 0)
-            Toast.makeText(getActivity(), "Please fill out all fields before encrypting", Toast.LENGTH_SHORT).show();
-        else {
-            Toast.makeText(getActivity(), "Cool. Encrypting...", Toast.LENGTH_SHORT).show();
-        }
-
-
-        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-        intent.setType("image/*");
-        startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE);
-    }
-
-    public void test() {
-        new Thread() {
-            public void run() {
-                try {
-                    URL url = new URL("https://stegosaurus.ml/api/test");
-                    HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-
-                    try {
-                        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
-                        StringBuilder stringBuilder = new StringBuilder();
-                        String line;
-                        while ((line = bufferedReader.readLine()) != null) {
-                            stringBuilder.append(line).append("\n");
-                        }
-                        bufferedReader.close();
-                        Message msg = Message.obtain();
-                        msg.obj = stringBuilder.toString();
-                        networkHandler.sendMessage(msg);
-                    } finally {
-                        urlConnection.disconnect();
-                    }
-
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }.start();
-    }
-
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == PICK_IMAGE && resultCode == Activity.RESULT_OK)
-        {
-            // https://stackoverflow.com/questions/5309190/android-pick-images-from-gallery
-            //
-        }
     }
 
     Handler networkHandler = new Handler(new Handler.Callback() {
