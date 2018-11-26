@@ -51,8 +51,8 @@ public class MainActivity extends AppCompatActivity {
 
             switch (position) {
                 case 1: retval = new HomeFragment(); break;
-                case 2: retval = new DecryptFragment(); break;
-                default: retval = new EncryptFragment(); break;
+                case 2: retval = new ExtractFragment(); break;
+                default: retval = new InsertFragment(); break;
             }
             return retval;
         }

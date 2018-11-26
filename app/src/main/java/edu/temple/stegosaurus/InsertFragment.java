@@ -57,7 +57,7 @@ import static android.app.Activity.RESULT_OK;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class EncryptFragment extends Fragment {
+public class InsertFragment extends Fragment {
 
     Button basePhotoButton, dataPhotoButton, insertButton;
     TextView t;
@@ -67,10 +67,11 @@ public class EncryptFragment extends Fragment {
 
     String testMessage = "test test";
 
+    private static final int GET_PERMISSION = 99;
     private static final int PICK_BASE_IMAGE = 100;
     private static final int PICK_DATA_IMAGE = 101;
 
-    public EncryptFragment() {
+    public InsertFragment() {
         // Required empty public constructor
     }
 
@@ -86,6 +87,11 @@ public class EncryptFragment extends Fragment {
         basePhotoButton = v.findViewById(R.id.basePhotoButton);
         dataPhotoButton = v.findViewById(R.id.dataPhotoButton);
         insertButton = v.findViewById(R.id.insertButton);
+
+        // GET PERMISSIONS
+        ActivityCompat.requestPermissions(getActivity(),
+                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                GET_PERMISSION);
 
         basePhotoButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -104,7 +110,8 @@ public class EncryptFragment extends Fragment {
         insertButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                getCapacity();
+                //getCapacity();
+                getStegoImage();
             }
         });
 
@@ -134,39 +141,6 @@ public class EncryptFragment extends Fragment {
      *  Stegosaurus API functions
      */
 
-    public void getCapacity() {
-        Retrofit.Builder builder = new Retrofit.Builder()
-                .baseUrl("https://stegosaurus.ml")
-                .addConverterFactory(GsonConverterFactory.create());
-        Retrofit retrofit = builder.build();
-        StegosaurusService client = retrofit.create(StegosaurusService.class);
-        if(baseImageUri != null) {
-            ActivityCompat.requestPermissions(getActivity(),
-                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                    PICK_BASE_IMAGE);
-            if (ContextCompat.checkSelfPermission(v.getContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-                Call<String> call = client.howManyBytes(prepareFilePart("image", baseImageUri), false);
-                call.enqueue(new Callback<String>() {
-                    @Override
-                    public void onResponse(Call<String> call, Response<String> response) {
-                        Message msg = Message.obtain();
-                        msg.obj = response.body();
-                        textViewHandler.sendMessage(msg);
-                    }
-
-                    @Override
-                    public void onFailure(Call<String> call, Throwable t) {
-                        Toast.makeText(getActivity(), "Can't get capacity", Toast.LENGTH_SHORT).show();
-                        Log.i("Throwable", t.toString());
-                    }
-                });
-            }
-            else
-                Toast.makeText(getActivity(), "external storage: " + isExternalStorageWritable(), Toast.LENGTH_SHORT).show();
-
-        }
-    }
-
     public void getStegoImage() {
         Retrofit.Builder builder = new Retrofit.Builder()
                 .baseUrl("https://stegosaurus.ml")
@@ -174,22 +148,22 @@ public class EncryptFragment extends Fragment {
         Retrofit retrofit = builder.build();
         StegosaurusService client = retrofit.create(StegosaurusService.class);
         if(baseImageUri != null && dataImageUri != null) {  // TODO: allow text file or photo THEN allow photo or other small file
-            ActivityCompat.requestPermissions(getActivity(),
-                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                    PICK_BASE_IMAGE);
             if (ContextCompat.checkSelfPermission(v.getContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-                Call<String> call = client.howManyBytes(prepareFilePart("image", baseImageUri), false);
+
+                //Call<String> call = client.howManyBytes(prepareFilePart("image", baseImageUri), false);
+                Call<String> call = client.insertPhoto(prepareFilePart("image", baseImageUri),
+                        prepareFilePart("content", dataImageUri), "random key");
+
                 call.enqueue(new Callback<String>() {
                     @Override
                     public void onResponse(Call<String> call, Response<String> response) {
-                        Message msg = Message.obtain();
-                        msg.obj = response.body();
-                        textViewHandler.sendMessage(msg);
+                        //Toast.makeText(getActivity(), "Code: " + response.code(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getActivity(), "Response: " + response.body(), Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
                     public void onFailure(Call<String> call, Throwable t) {
-                        Toast.makeText(getActivity(), "Can't get capacity", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getActivity(), "Can't insert image", Toast.LENGTH_SHORT).show();
                         Log.i("Throwable", t.toString());
                     }
                 });
@@ -200,6 +174,36 @@ public class EncryptFragment extends Fragment {
         }
         else
             Toast.makeText(getActivity(), "Please provide all inputs", Toast.LENGTH_SHORT).show();
+    }
+
+    public void getCapacity() {
+        Retrofit.Builder builder = new Retrofit.Builder()
+                .baseUrl("https://stegosaurus.ml")
+                .addConverterFactory(GsonConverterFactory.create());
+        Retrofit retrofit = builder.build();
+        StegosaurusService client = retrofit.create(StegosaurusService.class);
+        if(baseImageUri != null) {
+            if (ContextCompat.checkSelfPermission(v.getContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+                Call<String> call = client.howManyBytes(prepareFilePart("image", baseImageUri), false);
+                call.enqueue(new Callback<String>() {
+                    @Override
+                    public void onResponse(Call<String> call, Response<String> response) {
+                        Message msg = Message.obtain();
+                        msg.obj = response.body();
+                        textViewHandler.sendMessage(msg);
+                    }
+
+                    @Override
+                    public void onFailure(Call<String> call, Throwable t) {
+                        Toast.makeText(getActivity(), "Can't get capacity", Toast.LENGTH_SHORT).show();
+                        Log.i("Throwable", t.toString());
+                    }
+                });
+            }
+            else
+                Toast.makeText(getActivity(), "external storage: " + isExternalStorageWritable(), Toast.LENGTH_SHORT).show();
+
+        }
     }
 
     /**
