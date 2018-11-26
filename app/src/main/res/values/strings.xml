@@ -6,14 +6,15 @@
     <string name="title_activity_encryption">EncryptionActivity</string>
     <string name="title_activity_decryption">Decryption</string>
     <string name="title_activity_info">InfoActivity</string>
-    <string name="encrypt_message">Encrypt Time!</string>
-    <string name="encrypt_button">Encrypt</string>
-    <string name="decrypt_button">Decrypt</string>
+    <string name="encrypt_message">or</string>
+    <string name="encrypt_button">Insert Data</string>
+    <string name="decrypt_button">Extract Data</string>
+    <string name="file_upload_button">Upload Secret File</string>
     <string name="info_button">Info</string>
-    <string name="upload_button">Upload</string>
+    <string name="upload_button">Upload Steganographic Image</string>
     <string name="key_input">Enter Secret Key</string>
     <string name="message_input">Enter Secret Message</string>
-    <string name="test_button">DO ENCRYPTION</string>
+    <string name="photo_button">Choose Photo</string>
     <string name="encrypt_arrow">&lt;&#8212;Left to Encrypt</string>
     <string name="decrypt_arrow">Right to Decrypt&#8212;&gt;</string>
 </resources>
