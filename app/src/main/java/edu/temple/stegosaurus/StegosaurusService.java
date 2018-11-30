@@ -9,6 +9,7 @@ import java.sql.Blob;
 
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.GET;
 import retrofit2.http.Multipart;
@@ -35,5 +36,5 @@ public interface StegosaurusService {
 
     @Multipart
     @POST("/api/extract")
-    Call<String> extractDataWithImage(@Part MultipartBody.Part baseImage, @Query("key") String key);
+    Call<ResponseBody> extractDataWithImage(@Part MultipartBody.Part baseImage, @Query("key") String key);
 }

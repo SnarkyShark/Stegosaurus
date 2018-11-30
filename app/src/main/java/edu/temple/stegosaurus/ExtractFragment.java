@@ -28,11 +28,16 @@ import com.google.gson.GsonBuilder;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.sql.Blob;
 
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -40,6 +45,7 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 import static android.app.Activity.RESULT_OK;
+import static edu.temple.stegosaurus.FileUtils.TAG;
 
 
 /**
@@ -121,16 +127,17 @@ public class ExtractFragment extends Fragment {
             if (ContextCompat.checkSelfPermission(v.getContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
 
                 //Call<String> call = client.howManyBytes(prepareFilePart("image", baseImageUri), false);
-                Call<String> call = client.extractDataWithImage(prepareFilePart("image", stegoImageUri), "rando key");
+                Call<ResponseBody> call = client.extractDataWithImage(prepareFilePart("image", stegoImageUri), "rando key");
 
-                call.enqueue(new Callback<String>() {
+                call.enqueue(new Callback<ResponseBody>() {
                     @Override
-                    public void onResponse(Call<String> call, Response<String> response) {
-                        Toast.makeText(getActivity(), "Code: " + response.code(), Toast.LENGTH_SHORT).show();
+                    public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                        boolean success = writeResponseBodyToDisk(response.body());
+                        Toast.makeText(getActivity(), "File downloaded: " + success, Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
-                    public void onFailure(Call<String> call, Throwable t) {
+                    public void onFailure(Call<ResponseBody> call, Throwable t) {
                         Toast.makeText(getActivity(), "Can't extract data", Toast.LENGTH_SHORT).show();
                         Log.i("Throwable", t.toString());
                     }
@@ -175,14 +182,71 @@ public class ExtractFragment extends Fragment {
         return false;
     }
 
+    // Code from: https://futurestud.io/tutorials/retrofit-2-how-to-download-files-from-server
+    private boolean writeResponseBodyToDisk(ResponseBody body) {
+        try {
+            // todo change the file location/name according to your needs
+            File futureStudioIconFile = new File(
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "dataImage.png");
+
+            InputStream inputStream = null;
+            OutputStream outputStream = null;
+
+            try {
+                byte[] fileReader = new byte[4096];
+
+                long fileSize = body.contentLength();
+                long fileSizeDownloaded = 0;
+
+                inputStream = body.byteStream();
+                outputStream = new FileOutputStream(futureStudioIconFile);
+
+                while (true) {
+                    int read = inputStream.read(fileReader);
+
+                    if (read == -1) {
+                        break;
+                    }
+
+                    outputStream.write(fileReader, 0, read);
+
+                    fileSizeDownloaded += read;
+
+                    Log.d(TAG, "file download: " + fileSizeDownloaded + " of " + fileSize);
+                    //SET IMAGE
+                    Message msg = Message.obtain();
+                    msg.obj = futureStudioIconFile.toString();
+                    imageViewHandler.sendMessage(msg);
+                }
+
+                outputStream.flush();
+
+                return true;
+            } catch (IOException e) {
+                return false;
+            } finally {
+                if (inputStream != null) {
+                    inputStream.close();
+                }
+
+                if (outputStream != null) {
+                    outputStream.close();
+                }
+            }
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
     /**
      *  Handlers
      */
 
-    Handler textViewHandler = new Handler(new Handler.Callback() {
+    Handler imageViewHandler = new Handler(new Handler.Callback() {
         @Override
         public boolean handleMessage(Message msg) {
-            t.setText((String) msg.obj);
+            extractImageView.setImageURI(Uri.parse((String) msg.obj));
+            Toast.makeText(getActivity(),"set the image", Toast.LENGTH_SHORT).show();
             return false;
         }
     });
