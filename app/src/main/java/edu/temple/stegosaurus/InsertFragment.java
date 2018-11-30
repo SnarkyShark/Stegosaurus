@@ -21,6 +21,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -52,6 +53,9 @@ public class InsertFragment extends Fragment {
     Uri baseImageUri, dataImageUri;
     View v;
     Context context;
+    String keys[];
+    EncryptionUtils encryptBuddy;
+    EditText keyText;
 
     String testMessage = "test test";
 
@@ -76,6 +80,8 @@ public class InsertFragment extends Fragment {
         dataPhotoButton = v.findViewById(R.id.dataPhotoButton);
         insertButton = v.findViewById(R.id.insertButton);
         context = getContext();
+        keyText = v.findViewById(R.id.keyEditText);
+        encryptBuddy = new EncryptionUtils();
 
         // GET PERMISSIONS
         ActivityCompat.requestPermissions(getActivity(),
@@ -99,6 +105,14 @@ public class InsertFragment extends Fragment {
         insertButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                keys = encryptBuddy.generateKeys(keyText.getText().toString());
+                File data = new File(dataImageUri.getPath());
+                try {
+                    encryptBuddy.encrypt(keys[0], data, data);
+                    Log.i("encryptiontest", "decrypted");
+                } catch(Exception e) {
+                    e.printStackTrace();
+                }
                 getStegoImage();
             }
         });

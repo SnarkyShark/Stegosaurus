@@ -60,6 +60,8 @@ public class ExtractFragment extends Fragment {
     EditText extractKeyEditText, selectPhotoEditText;
     Uri stegoImageUri;
     String stegoImageLink;
+    String[] keys;
+    EncryptionUtils encryptBuddy;
 
     private static final int PICK_STEGO_IMAGE = 100;
 
@@ -91,6 +93,7 @@ public class ExtractFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 stegoImageLink = selectPhotoEditText.getText().toString();
+                keys = encryptBuddy.generateKeys(extractKeyEditText.getText().toString());
                 sendStegoImage();
             }
         });
@@ -191,6 +194,13 @@ public class ExtractFragment extends Fragment {
             // todo change the file location/name according to your needs
             File futureStudioIconFile = new File(
                     Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "dataImage.png");
+
+            try {
+                encryptBuddy.decrypt(keys[0], futureStudioIconFile, futureStudioIconFile);
+                Log.i("encryptiontest", "decrypted");
+            } catch(Exception e) {
+                e.printStackTrace();
+            }
 
             InputStream inputStream = null;
             OutputStream outputStream = null;
