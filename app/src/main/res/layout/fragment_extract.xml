@@ -9,16 +9,26 @@
     tools:context=".ExtractFragment">
 
     <TextView
-        android:id="@+id/textView"
+        android:id="@+id/extractTextView"
         style="?android:textAppearanceMedium"
-        android:layout_width="match_parent"
+        android:layout_width="49dp"
         android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
         android:lineSpacingMultiplier="1.2"
         android:padding="16dp"
-        android:text="Decrypt Time!" />
+        android:text="@string/or_message"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.501"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.55" />
 
     <Button
-        android:id="@+id/decryptButton"
+        android:id="@+id/extractButton"
         android:layout_width="344dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
@@ -33,7 +43,7 @@
         app:layout_constraintVertical_bias="0.955" />
 
     <EditText
-        android:id="@+id/decryptKeyEditText"
+        android:id="@+id/extractKeyEditText"
         android:layout_width="333dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
@@ -51,7 +61,7 @@
         app:layout_constraintVertical_bias="0.81" />
 
     <Button
-        android:id="@+id/uploadStegoButton"
+        android:id="@+id/selectStegoButton"
         android:layout_width="wrap_content"
         android:layout_height="46dp"
         android:layout_marginStart="8dp"
@@ -63,7 +73,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.636" />
+        app:layout_constraintVertical_bias="0.454" />
 
     <ImageView
         android:id="@+id/stegoImageView"
@@ -75,9 +85,28 @@
         android:layout_marginBottom="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.503"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.253"
+        app:layout_constraintVertical_bias="0.026"
         tools:src="@tools:sample/avatars[9]" />
+
+    <EditText
+        android:id="@+id/imageUrlEditText"
+        android:layout_width="332dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
+        android:ems="10"
+        android:hint="@string/image_url"
+        android:inputType="textPersonName"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.527"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.621" />
 
 </android.support.constraint.ConstraintLayout>

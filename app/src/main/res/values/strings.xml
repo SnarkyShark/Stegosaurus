@@ -6,15 +6,17 @@
     <string name="title_activity_encryption">EncryptionActivity</string>
     <string name="title_activity_decryption">Decryption</string>
     <string name="title_activity_info">InfoActivity</string>
-    <string name="encrypt_message">or</string>
+    <string name="or_message">or</string>
     <string name="encrypt_button">Insert Data</string>
     <string name="decrypt_button">Extract Data</string>
     <string name="file_upload_button">Upload Secret File</string>
     <string name="info_button">Info</string>
-    <string name="upload_button">Upload Steganographic Image</string>
+    <string name="upload_button">Get Image From Storage</string>
     <string name="key_input">Enter Secret Key</string>
+    <string name="image_url">Enter Image URL</string>
     <string name="message_input">Enter Secret Message</string>
     <string name="photo_button">Choose Photo</string>
     <string name="encrypt_arrow">&lt;&#8212;Left to Encrypt</string>
     <string name="decrypt_arrow">Right to Decrypt&#8212;&gt;</string>
+    <string name="app_info">Stegosaurus is an encryption service with paired web and mobile experiences. Our service leverages modern steganography techniques to hide messages, images, and files inside of a vessel image without sacrifice of image quality. Images encrypted with the service will appear virtually unchanged, allowing Users to publically share private information without detection. With security at the core of the stegosaurus service, each of the clients exercise principles of end-to-end encryption using a key generation and encryption scheme of our own design. To embed and extract the data, stegosaurus utilizes two very powerful Convolutional Neural Networks.The weights for each network are optimized so that the difference between the original image and the image embedded with data is minimized  and the recovery rate of the embedded data is maximized. </string>
 </resources>

@@ -19,7 +19,7 @@
         android:layout_marginBottom="8dp"
         android:lineSpacingMultiplier="1.2"
         android:padding="16dp"
-        android:text="@string/encrypt_message"
+        android:text="@string/or_message"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.501"

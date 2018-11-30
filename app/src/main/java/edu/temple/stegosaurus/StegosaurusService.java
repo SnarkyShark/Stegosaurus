@@ -2,7 +2,10 @@ package edu.temple.stegosaurus;
 
 import android.graphics.Bitmap;
 
+import org.json.JSONObject;
+
 import java.io.File;
+import java.sql.Blob;
 
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
@@ -29,4 +32,8 @@ public interface StegosaurusService {
     @Multipart
     @POST("/api/insert")
     Call<String> insertPhoto(@Part MultipartBody.Part baseImage, @Part MultipartBody.Part dataImage, @Query("key") String key);
+
+    @Multipart
+    @POST("/api/extract")
+    Call<String> extractDataWithImage(@Part MultipartBody.Part baseImage, @Query("key") String key);
 }

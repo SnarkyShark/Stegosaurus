@@ -2,15 +2,8 @@ package edu.temple.stegosaurus;
 
 
 import android.Manifest;
-import android.app.Activity;
-import android.content.ContentValues;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.media.Image;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -25,22 +18,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -80,7 +62,7 @@ public class InsertFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        v = inflater.inflate(R.layout.fragment_encrypt, container, false);
+        v = inflater.inflate(R.layout.fragment_insert, container, false);
         t = v.findViewById(R.id.encryptTime);
         baseImageView = v.findViewById(R.id.basePhotoView);
         dataImageView = v.findViewById(R.id.dataPhotoView);
@@ -110,7 +92,6 @@ public class InsertFragment extends Fragment {
         insertButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //getCapacity();
                 getStegoImage();
             }
         });
@@ -159,6 +140,7 @@ public class InsertFragment extends Fragment {
                     public void onResponse(Call<String> call, Response<String> response) {
                         //Toast.makeText(getActivity(), "Code: " + response.code(), Toast.LENGTH_SHORT).show();
                         Toast.makeText(getActivity(), "Response: " + response.body(), Toast.LENGTH_SHORT).show();
+                        Log.i("Image Link:", response.body());
                     }
 
                     @Override
