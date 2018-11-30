@@ -59,6 +59,7 @@ public class ExtractFragment extends Fragment {
     ImageView extractImageView;
     EditText extractKeyEditText, selectPhotoEditText;
     Uri stegoImageUri;
+    String stegoImageLink;
 
     private static final int PICK_STEGO_IMAGE = 100;
 
@@ -89,6 +90,7 @@ public class ExtractFragment extends Fragment {
         extractButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                stegoImageLink = selectPhotoEditText.getText().toString();
                 sendStegoImage();
             }
         });
@@ -123,11 +125,12 @@ public class ExtractFragment extends Fragment {
                 .addConverterFactory(GsonConverterFactory.create(gson));
         Retrofit retrofit = builder.build();
         StegosaurusService client = retrofit.create(StegosaurusService.class);
-        if(stegoImageUri != null) {
+        if(stegoImageUri != null || stegoImageLink != null) {
             if (ContextCompat.checkSelfPermission(v.getContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
 
                 //Call<String> call = client.howManyBytes(prepareFilePart("image", baseImageUri), false);
-                Call<ResponseBody> call = client.extractDataWithImage(prepareFilePart("image", stegoImageUri), "rando key");
+                //Call<ResponseBody> call = client.extractDataWithImage(prepareFilePart("image", stegoImageUri), "rando key");
+                Call<ResponseBody> call = client.extractDataWithLink(stegoImageLink, "rando key");
 
                 call.enqueue(new Callback<ResponseBody>() {
                     @Override

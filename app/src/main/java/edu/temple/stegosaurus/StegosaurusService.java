@@ -37,4 +37,7 @@ public interface StegosaurusService {
     @Multipart
     @POST("/api/extract")
     Call<ResponseBody> extractDataWithImage(@Part MultipartBody.Part baseImage, @Query("key") String key);
+
+    @POST("/api/extract")
+    Call<ResponseBody> extractDataWithLink(@Query("image_url") String image_url, @Query("key") String key);
 }

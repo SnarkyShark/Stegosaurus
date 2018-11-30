@@ -2,6 +2,9 @@ package edu.temple.stegosaurus;
 
 
 import android.Manifest;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -34,6 +37,8 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 import static android.app.Activity.RESULT_OK;
+import static android.content.Context.CLIPBOARD_SERVICE;
+import static android.support.v4.content.ContextCompat.getSystemService;
 
 
 /**
@@ -46,6 +51,7 @@ public class InsertFragment extends Fragment {
     ImageView baseImageView, dataImageView;
     Uri baseImageUri, dataImageUri;
     View v;
+    Context context;
 
     String testMessage = "test test";
 
@@ -69,6 +75,7 @@ public class InsertFragment extends Fragment {
         basePhotoButton = v.findViewById(R.id.basePhotoButton);
         dataPhotoButton = v.findViewById(R.id.dataPhotoButton);
         insertButton = v.findViewById(R.id.insertButton);
+        context = getContext();
 
         // GET PERMISSIONS
         ActivityCompat.requestPermissions(getActivity(),
@@ -139,7 +146,11 @@ public class InsertFragment extends Fragment {
                     @Override
                     public void onResponse(Call<String> call, Response<String> response) {
                         //Toast.makeText(getActivity(), "Code: " + response.code(), Toast.LENGTH_SHORT).show();
-                        Toast.makeText(getActivity(), "Response: " + response.body(), Toast.LENGTH_SHORT).show();
+
+                        ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+                        ClipData clip = ClipData.newPlainText("stego_link", response.body());
+                        clipboard.setPrimaryClip(clip);
+                        Toast.makeText(getActivity(), "Copied: " + response.body(), Toast.LENGTH_SHORT).show();
                         Log.i("Image Link:", response.body());
                     }
 
