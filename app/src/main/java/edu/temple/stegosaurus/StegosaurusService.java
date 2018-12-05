@@ -28,7 +28,7 @@ public interface StegosaurusService {
 
     @Multipart
     @POST("get_capacity")
-    Call<String> howManyBytes(@Part MultipartBody.Part theImage, @Query("formatted") boolean formatted);
+    Call<String> getCapacity(@Part MultipartBody.Part theImage, @Query("formatted") boolean formatted);
 
     @Multipart
     @POST("insert")

@@ -7,6 +7,7 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.AssetFileDescriptor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -25,6 +26,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import java.io.File;
+import java.util.concurrent.TimeUnit;
+
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
@@ -44,8 +47,9 @@ public class InsertFragment extends Fragment {
     ImageView baseImageView, dataImageView;
     Button basePhotoButton, dataPhotoButton, insertButton;
     Context context;
-    String keys[];
+    String keys[], clientKey, serverKey;
     Uri baseImageUri, dataImageUri;
+    boolean bigEnough;
 
     private static final int PICK_BASE_IMAGE = 100;
     private static final int PICK_DATA_IMAGE = 101;
@@ -69,6 +73,7 @@ public class InsertFragment extends Fragment {
         dataPhotoButton = v.findViewById(R.id.dataPhotoButton);
         insertButton = v.findViewById(R.id.insertButton);
         context = getContext();
+        bigEnough = false;
 
         // set default images
         baseImageView.setImageResource(R.drawable.file_logo);
@@ -94,7 +99,13 @@ public class InsertFragment extends Fragment {
         insertButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                insertImage();
+                checkCapacity();
+
+                if(bigEnough)
+                    insertImage();
+                else
+                    Toast.makeText(getActivity(), "Sorry, the base image file is too small", Toast.LENGTH_SHORT).show();
+
             }
         });
 
@@ -134,22 +145,24 @@ public class InsertFragment extends Fragment {
         Retrofit retrofit = builder.build();
         StegosaurusService client = retrofit.create(StegosaurusService.class);
 
-        if(baseImageUri != null && dataImageUri != null) {  // TODO: allow text file or photo THEN allow photo or other small file
+        serverKey = "wonderful";
+
+        // ensure we have all needed inputs
+        if(baseImageUri == null || dataImageUri == null || serverKey.equals(""))
+            Toast.makeText(getActivity(), "Please provide all inputs", Toast.LENGTH_SHORT).show();
+        else {
             if (ContextCompat.checkSelfPermission(v.getContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
 
-                MultipartBody.Part image = prepareFilePart("image", baseImageUri);
-                MultipartBody.Part content = prepareFilePart("content", dataImageUri);
-                Log.i("check multi", image.toString());
-                Log.i("check multi", content.toString());
-
-                Call<String> call = client.insertPhoto(image, content, "random key");
+                Call<String> call = client.insertPhoto(prepareFilePart("image", baseImageUri), prepareFilePart("content", dataImageUri), serverKey);
 
                 call.enqueue(new Callback<String>() {
                     @Override
                     public void onResponse(Call<String> call, Response<String> response) {
-                        Toast.makeText(getActivity(), response.code() + ": " + response.message(), Toast.LENGTH_SHORT).show();
-
-                    }
+                        ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+                        ClipData clip = ClipData.newPlainText("stego_link", response.body());
+                        clipboard.setPrimaryClip(clip);
+                        Toast.makeText(getActivity(), "Copied: " + response.body(), Toast.LENGTH_SHORT).show();
+                        Log.i("Image Link:", response.body());                    }
 
                     @Override
                     public void onFailure(Call<String> call, Throwable t) {
@@ -157,12 +170,57 @@ public class InsertFragment extends Fragment {
                         Log.i("Throwable", t.toString());
                     }
                 });
+
+                }
+            else
+                Toast.makeText(getActivity(), "external storage: " + isExternalStorageWritable(), Toast.LENGTH_SHORT).show();
+
+        }
+    }
+
+    // get the storage capacity of an image
+    public void checkCapacity() {
+        Retrofit.Builder builder = new Retrofit.Builder()
+                .baseUrl("https://stegosaurus.ml/api/")
+                .addConverterFactory(GsonConverterFactory.create());
+        Retrofit retrofit = builder.build();
+        StegosaurusService client = retrofit.create(StegosaurusService.class);
+        if(baseImageUri != null && dataImageUri != null) {
+            if (ContextCompat.checkSelfPermission(v.getContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+                Call<String> call = client.getCapacity(prepareFilePart("image", baseImageUri), false);
+                call.enqueue(new Callback<String>() {
+                    @Override
+                    public void onResponse(Call<String> call, Response<String> response) {
+                        //Toast.makeText(getActivity(), "Storage: " + response.body(), Toast.LENGTH_SHORT).show();
+                        int capacity = Integer.parseInt(response.body());
+
+                        try {
+                            AssetFileDescriptor afd = getActivity().getContentResolver().openAssetFileDescriptor(dataImageUri, "r");
+                            long fileSize = afd.getLength();
+                            afd.close();
+
+                            Log.i("dataCheck", "capacity: " + capacity);
+                            Log.i("dataCheck", "data: " + fileSize);
+
+                            // checks whether it's big enough
+                            bigEnough = capacity > fileSize;
+
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<String> call, Throwable t) {
+                        Toast.makeText(getActivity(), "Can't get capacity", Toast.LENGTH_SHORT).show();
+                        Log.i("Throwable", t.toString());
+                    }
+                });
             }
             else
                 Toast.makeText(getActivity(), "external storage: " + isExternalStorageWritable(), Toast.LENGTH_SHORT).show();
+
         }
-        else
-            Toast.makeText(getActivity(), "Please provide all inputs", Toast.LENGTH_SHORT).show();
     }
 
     // check if we can connect to the server
@@ -186,36 +244,6 @@ public class InsertFragment extends Fragment {
 
             }
         });
-    }
-
-    // get the storage capacity of an image
-    public void getCapacity() {
-        Retrofit.Builder builder = new Retrofit.Builder()
-                .baseUrl("https://stegosaurus.ml")
-                .addConverterFactory(GsonConverterFactory.create());
-        Retrofit retrofit = builder.build();
-        StegosaurusService client = retrofit.create(StegosaurusService.class);
-        if(baseImageUri != null) {
-            if (ContextCompat.checkSelfPermission(v.getContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-                Call<String> call = client.howManyBytes(prepareFilePart("image", baseImageUri), true);
-                call.enqueue(new Callback<String>() {
-                    @Override
-                    public void onResponse(Call<String> call, Response<String> response) {
-                        Toast.makeText(getActivity(), "Storage: " + response.body(), Toast.LENGTH_SHORT).show();
-
-                    }
-
-                    @Override
-                    public void onFailure(Call<String> call, Throwable t) {
-                        Toast.makeText(getActivity(), "Can't get capacity", Toast.LENGTH_SHORT).show();
-                        Log.i("Throwable", t.toString());
-                    }
-                });
-            }
-            else
-                Toast.makeText(getActivity(), "external storage: " + isExternalStorageWritable(), Toast.LENGTH_SHORT).show();
-
-        }
     }
 
     /**
