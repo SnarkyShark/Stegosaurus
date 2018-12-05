@@ -13,7 +13,6 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.MediaStore;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
@@ -25,9 +24,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import java.io.File;
-
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
@@ -36,30 +33,20 @@ import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
-
 import static android.app.Activity.RESULT_OK;
-import static android.content.Context.CLIPBOARD_SERVICE;
-import static android.support.v4.content.ContextCompat.getSystemService;
 
-
-/**
- * A simple {@link Fragment} subclass.
- */
 public class InsertFragment extends Fragment {
 
-    Button basePhotoButton, dataPhotoButton, insertButton;
-    TextView t;
-    ImageView baseImageView, dataImageView;
-    Uri baseImageUri, dataImageUri;
+    // View Elements
     View v;
+    TextView t;
+    EditText keyText;
+    ImageView baseImageView, dataImageView;
+    Button basePhotoButton, dataPhotoButton, insertButton;
     Context context;
     String keys[];
-    EncryptionUtils encryptBuddy;
-    EditText keyText;
+    Uri baseImageUri, dataImageUri;
 
-    String testMessage = "test test";
-
-    private static final int GET_PERMISSION = 99;
     private static final int PICK_BASE_IMAGE = 100;
     private static final int PICK_DATA_IMAGE = 101;
 
@@ -71,23 +58,23 @@ public class InsertFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
+
+        // connect variables to layout
         v = inflater.inflate(R.layout.fragment_insert, container, false);
         t = v.findViewById(R.id.encryptTime);
+        keyText = v.findViewById(R.id.keyEditText);
         baseImageView = v.findViewById(R.id.basePhotoView);
         dataImageView = v.findViewById(R.id.dataPhotoView);
         basePhotoButton = v.findViewById(R.id.basePhotoButton);
         dataPhotoButton = v.findViewById(R.id.dataPhotoButton);
         insertButton = v.findViewById(R.id.insertButton);
         context = getContext();
-        keyText = v.findViewById(R.id.keyEditText);
-        encryptBuddy = new EncryptionUtils();
 
-        // GET PERMISSIONS
-        ActivityCompat.requestPermissions(getActivity(),
-                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                GET_PERMISSION);
+        // set default images
+        baseImageView.setImageResource(R.drawable.file_logo);
+        dataImageView.setImageResource(R.drawable.file_logo);
 
+        // select base photo from user files
         basePhotoButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -95,6 +82,7 @@ public class InsertFragment extends Fragment {
             }
         });
 
+        // select data (photo) from user files
         dataPhotoButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -102,18 +90,11 @@ public class InsertFragment extends Fragment {
             }
         });
 
+        // send data to server
         insertButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                keys = encryptBuddy.generateKeys(keyText.getText().toString());
-                File data = new File(dataImageUri.getPath());
-                try {
-                    encryptBuddy.encrypt(keys[0], data, data);
-                    Log.i("encryptiontest", "decrypted");
-                } catch(Exception e) {
-                    e.printStackTrace();
-                }
-                getStegoImage();
+                insertImage();
             }
         });
 
@@ -123,16 +104,16 @@ public class InsertFragment extends Fragment {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+
+        // Sets imageViews
         if(resultCode == RESULT_OK && requestCode == PICK_BASE_IMAGE) {
             baseImageUri = data.getData();
-            //send it to baseImageHandler
             Message msg = Message.obtain();
             msg.obj = PICK_BASE_IMAGE;
             imageHandler.sendMessage(msg);
         }
         if(resultCode == RESULT_OK && requestCode == PICK_DATA_IMAGE) {
             dataImageUri = data.getData();
-            //send it to baseImageHandler
             Message msg = Message.obtain();
             msg.obj = PICK_DATA_IMAGE;
             imageHandler.sendMessage(msg);
@@ -143,29 +124,31 @@ public class InsertFragment extends Fragment {
      *  Stegosaurus API functions
      */
 
-    public void getStegoImage() {
+    // inputs: baseImageUri, dataImageUri, key
+    // outputs: a link to an image file
+    public void insertImage() {
+
         Retrofit.Builder builder = new Retrofit.Builder()
-                .baseUrl("https://stegosaurus.ml")
+                .baseUrl("https://stegosaurus.ml/api/")
                 .addConverterFactory(GsonConverterFactory.create());
         Retrofit retrofit = builder.build();
         StegosaurusService client = retrofit.create(StegosaurusService.class);
+
         if(baseImageUri != null && dataImageUri != null) {  // TODO: allow text file or photo THEN allow photo or other small file
             if (ContextCompat.checkSelfPermission(v.getContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
 
-                //Call<String> call = client.howManyBytes(prepareFilePart("image", baseImageUri), false);
-                Call<String> call = client.insertPhoto(prepareFilePart("image", baseImageUri),
-                        prepareFilePart("content", dataImageUri), "random key");
+                MultipartBody.Part image = prepareFilePart("image", baseImageUri);
+                MultipartBody.Part content = prepareFilePart("content", dataImageUri);
+                Log.i("check multi", image.toString());
+                Log.i("check multi", content.toString());
+
+                Call<String> call = client.insertPhoto(image, content, "random key");
 
                 call.enqueue(new Callback<String>() {
                     @Override
                     public void onResponse(Call<String> call, Response<String> response) {
-                        //Toast.makeText(getActivity(), "Code: " + response.code(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getActivity(), response.code() + ": " + response.message(), Toast.LENGTH_SHORT).show();
 
-                        ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
-                        ClipData clip = ClipData.newPlainText("stego_link", response.body());
-                        clipboard.setPrimaryClip(clip);
-                        Toast.makeText(getActivity(), "Copied: " + response.body(), Toast.LENGTH_SHORT).show();
-                        Log.i("Image Link:", response.body());
                     }
 
                     @Override
@@ -177,12 +160,35 @@ public class InsertFragment extends Fragment {
             }
             else
                 Toast.makeText(getActivity(), "external storage: " + isExternalStorageWritable(), Toast.LENGTH_SHORT).show();
-
         }
         else
             Toast.makeText(getActivity(), "Please provide all inputs", Toast.LENGTH_SHORT).show();
     }
 
+    // check if we can connect to the server
+    public void pingServer() {
+        Retrofit.Builder builder = new Retrofit.Builder()
+                .baseUrl("https://stegosaurus.ml/api/")
+                .addConverterFactory(GsonConverterFactory.create());
+        Retrofit retrofit = builder.build();
+        StegosaurusService client = retrofit.create(StegosaurusService.class);
+        Call<String> call = client.basicResponse();
+        call.enqueue(new Callback<String>() {
+            @Override
+            public void onResponse(Call<String> call, Response<String> response) {
+                Toast.makeText(getActivity(), "Response: " + response.body(), Toast.LENGTH_SHORT).show();
+
+            }
+
+            @Override
+            public void onFailure(Call<String> call, Throwable t) {
+                Toast.makeText(getActivity(), "Failed", Toast.LENGTH_SHORT).show();
+
+            }
+        });
+    }
+
+    // get the storage capacity of an image
     public void getCapacity() {
         Retrofit.Builder builder = new Retrofit.Builder()
                 .baseUrl("https://stegosaurus.ml")
@@ -191,13 +197,12 @@ public class InsertFragment extends Fragment {
         StegosaurusService client = retrofit.create(StegosaurusService.class);
         if(baseImageUri != null) {
             if (ContextCompat.checkSelfPermission(v.getContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-                Call<String> call = client.howManyBytes(prepareFilePart("image", baseImageUri), false);
+                Call<String> call = client.howManyBytes(prepareFilePart("image", baseImageUri), true);
                 call.enqueue(new Callback<String>() {
                     @Override
                     public void onResponse(Call<String> call, Response<String> response) {
-                        Message msg = Message.obtain();
-                        msg.obj = response.body();
-                        textViewHandler.sendMessage(msg);
+                        Toast.makeText(getActivity(), "Storage: " + response.body(), Toast.LENGTH_SHORT).show();
+
                     }
 
                     @Override
@@ -217,6 +222,7 @@ public class InsertFragment extends Fragment {
      *  Helper functions
      */
 
+    // Convert a file uri to a MultipartBody.part
     private MultipartBody.Part prepareFilePart(String partName, Uri fileUri) {
         File file = FileUtils.getFile(getActivity(), fileUri);
 
@@ -231,11 +237,13 @@ public class InsertFragment extends Fragment {
         return MultipartBody.Part.createFormData(partName, file.getName(), requestFile);
     }
 
+    // Open an intent to choose a picture from user's files
     public void openGallery(int resultCode) {
         Intent gallery = new Intent (Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI);
         startActivityForResult(gallery, resultCode);
     }
 
+    // ensures the app can write to external storage
     public boolean isExternalStorageWritable() {
         String state = Environment.getExternalStorageState();
         if (Environment.MEDIA_MOUNTED.equals(state)) {
@@ -248,14 +256,7 @@ public class InsertFragment extends Fragment {
      *  Handlers
      */
 
-    Handler textViewHandler = new Handler(new Handler.Callback() {
-        @Override
-        public boolean handleMessage(Message msg) {
-            t.setText((String) msg.obj);
-            return false;
-        }
-    });
-
+    // sets which images display in the imageViews
     Handler imageHandler = new Handler(new Handler.Callback() {
         @Override
         public boolean handleMessage(Message msg) {

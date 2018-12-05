@@ -1,7 +1,9 @@
 package edu.temple.stegosaurus;
 
+import android.Manifest;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
@@ -15,23 +17,21 @@ import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
 
-    /**
-     * The number of pages (wizard steps) to show in this demo.
-     */
-    private static final int NUM_PAGES = 3;
-
-
     ViewPager viewPager;
-
-    /**
-     * The pager adapter, which provides the pages to the view pager widget.
-     */
     PagerAdapter mPagerAdapter;
+
+    private static final int NUM_PAGES = 3;
+    private static final int GET_PERMISSION = 99;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // get permissions
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                GET_PERMISSION);
 
         // Instantiate a ViewPager and a PagerAdapter.
         viewPager = findViewById(R.id.pager);
@@ -41,8 +41,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * A simple pager adapter that represents 3 ScreenSlidePageFragment objects, in
-     * sequence.
+     * A simple pager adapter containing 3 ScreenSlidePageFragment objects
      */
     private class ScreenSlidePagerAdapter extends FragmentStatePagerAdapter {
         ScreenSlidePagerAdapter(FragmentManager fm) {

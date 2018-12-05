@@ -20,8 +20,7 @@ public class InfoActivity extends AppCompatActivity {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent startMainIntent = new Intent(InfoActivity.this, MainActivity.class);
-                startActivity(startMainIntent);
+                finish();
             }
         });
 
