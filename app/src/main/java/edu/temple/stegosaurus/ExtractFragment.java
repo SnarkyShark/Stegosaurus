@@ -153,7 +153,8 @@ public class ExtractFragment extends Fragment {
                 call.enqueue(new Callback<ResponseBody>() {
                     @Override
                     public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                        Toast.makeText(getActivity(), response.code() + ": " + response.message(), Toast.LENGTH_SHORT).show();
+                        boolean success = writeResponseBodyToDisk(response.body());
+                        Toast.makeText(getActivity(), "File downloaded: " + success, Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
@@ -203,11 +204,73 @@ public class ExtractFragment extends Fragment {
     }
 
     // Code from: https://futurestud.io/tutorials/retrofit-2-how-to-download-files-from-server
+    private boolean writeResponseBodyToDisk(ResponseBody body) {
+        try {
+            // todo change the file location/name according to your needs
+            File futureStudioIconFile = new File(
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "dataImage.png");
 
+            InputStream inputStream = null;
+            OutputStream outputStream = null;
+
+            try {
+                byte[] fileReader = new byte[4096];
+
+                long fileSize = body.contentLength();
+                long fileSizeDownloaded = 0;
+
+                inputStream = body.byteStream();
+                outputStream = new FileOutputStream(futureStudioIconFile);
+
+                while (true) {
+                    int read = inputStream.read(fileReader);
+
+                    if (read == -1) {
+                        break;
+                    }
+
+                    outputStream.write(fileReader, 0, read);
+
+                    fileSizeDownloaded += read;
+
+                    Log.d(TAG, "file download: " + fileSizeDownloaded + " of " + fileSize);
+                    //SET IMAGE
+                    Message msg = Message.obtain();
+                    msg.obj = futureStudioIconFile.toString();
+                    imageViewHandler.sendMessage(msg);
+                }
+
+                outputStream.flush();
+
+                return true;
+            } catch (IOException e) {
+                return false;
+            } finally {
+                if (inputStream != null) {
+                    inputStream.close();
+                }
+
+                if (outputStream != null) {
+                    outputStream.close();
+                }
+            }
+        } catch (IOException e) {
+            return false;
+        }
+    }
 
     /**
      *  Handlers
      */
+
+    Handler imageViewHandler = new Handler(new Handler.Callback() {
+        @Override
+        public boolean handleMessage(Message msg) {
+            extractImageView.setImageURI(Uri.parse((String) msg.obj));
+            Toast.makeText(getActivity(),"set the image", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+    });
 
     Handler imageHandler = new Handler(new Handler.Callback() {
         @Override

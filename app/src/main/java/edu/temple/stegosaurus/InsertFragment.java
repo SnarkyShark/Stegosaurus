@@ -8,11 +8,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
@@ -26,8 +28,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import java.io.File;
-import java.util.concurrent.TimeUnit;
-
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
@@ -99,9 +99,9 @@ public class InsertFragment extends Fragment {
         insertButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                checkCapacity();
+                //checkCapacity();
 
-                if(bigEnough)
+                if(baseImageIsBigEnough())
                     insertImage();
                 else
                     Toast.makeText(getActivity(), "Sorry, the base image file is too small", Toast.LENGTH_SHORT).show();
@@ -158,11 +158,14 @@ public class InsertFragment extends Fragment {
                 call.enqueue(new Callback<String>() {
                     @Override
                     public void onResponse(Call<String> call, Response<String> response) {
+                        //Toast.makeText(getActivity(), response.code() + ": " + response.message(), Toast.LENGTH_SHORT).show();
+
                         ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
                         ClipData clip = ClipData.newPlainText("stego_link", response.body());
                         clipboard.setPrimaryClip(clip);
                         Toast.makeText(getActivity(), "Copied: " + response.body(), Toast.LENGTH_SHORT).show();
-                        Log.i("Image Link:", response.body());                    }
+                        Log.i("Image Link:", response.body());
+                    }
 
                     @Override
                     public void onFailure(Call<String> call, Throwable t) {
@@ -249,6 +252,41 @@ public class InsertFragment extends Fragment {
     /**
      *  Helper functions
      */
+
+    public boolean baseImageIsBigEnough(){
+        boolean retval = false;
+
+
+        try {
+            // getting height, width, and afd
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            ParcelFileDescriptor fd = getActivity().getContentResolver().openFileDescriptor(baseImageUri, "r");
+            BitmapFactory.decodeFileDescriptor(fd.getFileDescriptor(), null, options);
+            int imageWidth = options.outWidth;
+            int imageHeight = options.outHeight;
+
+            AssetFileDescriptor afd = getActivity().getContentResolver().openAssetFileDescriptor(dataImageUri, "r");
+
+            Log.i("dataCheck", "the height: " + imageHeight);
+            Log.i("dataCheck", "width: " + imageWidth);
+
+            int capacity = (imageHeight - (imageHeight % 32)) * (imageWidth - (imageWidth % 32));
+            int size = (int) afd.getLength() * 5;   // 5 is super arbitrary
+
+
+            Log.i("dataCheck", "capacity: " + capacity);
+            Log.i("dataCheck", "data: " + size);
+            retval = capacity > size;   // the return value
+            Log.i("dataCheck", "it's big enough: " + retval);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+        return retval;
+    }
 
     // Convert a file uri to a MultipartBody.part
     private MultipartBody.Part prepareFilePart(String partName, Uri fileUri) {
