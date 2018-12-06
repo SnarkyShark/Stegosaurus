@@ -103,6 +103,8 @@ public class InsertFragment extends Fragment {
             public void onClick(View v) {
                 // generate keys
                 String password = keyText.getText().toString();
+
+                // ensure inputs
                 if (password.equals("") || dataImageUri.getPath() == null)
                     Toast.makeText(getActivity(), "Please provide all inputs", Toast.LENGTH_SHORT).show();
                 else {

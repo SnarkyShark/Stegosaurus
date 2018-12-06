@@ -57,7 +57,7 @@ public class ExtractFragment extends Fragment {
     ImageView extractImageView;
     Button selectPhotoButton, extractButton;
     Context context;
-    String keys[], stegoImageLink, key;
+    String keys[], stegoImageLink, clientKey, serverKey;
     Uri stegoImageUri;
 
     private static final int PICK_STEGO_IMAGE = 100;
@@ -95,8 +95,22 @@ public class ExtractFragment extends Fragment {
         extractButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
+                // generate keys
+                String password = extractKeyEditText.getText().toString();
                 stegoImageLink = selectPhotoEditText.getText().toString();
-                extractData();
+
+                // ensure inputs
+                if ((stegoImageLink.equals("") && stegoImageUri == null) || password.equals(""))
+                    Toast.makeText(getActivity(), "Please provide all inputs", Toast.LENGTH_SHORT).show();
+
+                else {
+                    String keys[] = EncryptionUtils.generateKeys(password);
+                    clientKey = keys[0];
+                    serverKey = keys[1];
+
+                    extractData();
+                }
             }
         });
 
@@ -134,36 +148,28 @@ public class ExtractFragment extends Fragment {
         // we have write permission
         if (ContextCompat.checkSelfPermission(v.getContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
 
-            // set key
-            key = extractKeyEditText.getText().toString();
+            Call<ResponseBody> call;
 
-            // ensure we have required inputs
-            if ((stegoImageLink == null && stegoImageUri == null) || key.equals(""))
-                Toast.makeText(getActivity(), "Please provide all inputs", Toast.LENGTH_SHORT).show();
-            else {
-                Call<ResponseBody> call;
+            // always prefer image link to image file
+            if(!stegoImageLink.equals(""))
+                call = client.extractDataWithLink(stegoImageLink, serverKey);
+            else
+                call = client.extractDataWithImage(prepareFilePart("image", stegoImageUri), serverKey);
 
-                // always prefer image link to image file
-                if(stegoImageLink != null)
-                    call = client.extractDataWithLink(stegoImageLink, "rando key");
-                else
-                    call = client.extractDataWithImage(prepareFilePart("image", stegoImageUri), key);
+            // tells us the api's response
+            call.enqueue(new Callback<ResponseBody>() {
+                @Override
+                public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                    boolean success = writeResponseBodyToDisk(response.body());
+                    Toast.makeText(getActivity(), "File downloaded: " + success, Toast.LENGTH_SHORT).show();
+                }
 
-                // tells us the api's response
-                call.enqueue(new Callback<ResponseBody>() {
-                    @Override
-                    public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                        boolean success = writeResponseBodyToDisk(response.body());
-                        Toast.makeText(getActivity(), "File downloaded: " + success, Toast.LENGTH_SHORT).show();
-                    }
-
-                    @Override
-                    public void onFailure(Call<ResponseBody> call, Throwable t) {
-                        Toast.makeText(getActivity(), "Can't extract data", Toast.LENGTH_SHORT).show();
-                        Log.i("Throwable", t.toString());
-                    }
-                });
-            }
+                @Override
+                public void onFailure(Call<ResponseBody> call, Throwable t) {
+                    Toast.makeText(getActivity(), "Can't extract data", Toast.LENGTH_SHORT).show();
+                    Log.i("Throwable", t.toString());
+                }
+            });
         }
         else
             Toast.makeText(getActivity(), "external storage: " + isExternalStorageWritable(), Toast.LENGTH_SHORT).show();
@@ -207,8 +213,9 @@ public class ExtractFragment extends Fragment {
     private boolean writeResponseBodyToDisk(ResponseBody body) {
         try {
             // todo change the file location/name according to your needs
-            File futureStudioIconFile = new File(
-                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "dataImage.png");
+            File inputFile = new File(
+                    Environment.getExternalStoragePublicDirectory(
+                            Environment.DIRECTORY_DOWNLOADS), "dataImage.png");
 
             InputStream inputStream = null;
             OutputStream outputStream = null;
@@ -220,7 +227,7 @@ public class ExtractFragment extends Fragment {
                 long fileSizeDownloaded = 0;
 
                 inputStream = body.byteStream();
-                outputStream = new FileOutputStream(futureStudioIconFile);
+                outputStream = new FileOutputStream(inputFile);
 
                 while (true) {
                     int read = inputStream.read(fileReader);
@@ -234,9 +241,24 @@ public class ExtractFragment extends Fragment {
                     fileSizeDownloaded += read;
 
                     Log.d(TAG, "file download: " + fileSizeDownloaded + " of " + fileSize);
+
+                    // decrypt data
+                    File outputFile = new File(getActivity().getExternalFilesDir(null) + "/decrypted.png");
+                    Log.i("madeit", "input: " + inputFile);
+                    Log.i("madeit", "output: " + outputFile);
+
+                    try {   // try to decrypt the data
+                        EncryptionUtils.decrypt(clientKey, inputFile, outputFile);
+                        Log.i("madeit", "outputFile: " + outputFile);
+
+                    } catch (Exception e) {
+                            e.printStackTrace();
+                            Toast.makeText(getActivity(), "Sorry, we couldn't decrypt the data", Toast.LENGTH_SHORT).show();
+                    }
+
                     //SET IMAGE
                     Message msg = Message.obtain();
-                    msg.obj = futureStudioIconFile.toString();
+                    msg.obj = outputFile.toString();
                     imageViewHandler.sendMessage(msg);
                 }
 
