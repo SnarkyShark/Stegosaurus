@@ -267,7 +267,6 @@ public class ExtractFragment extends Fragment {
         @Override
         public boolean handleMessage(Message msg) {
             extractImageView.setImageURI(Uri.parse((String) msg.obj));
-            Toast.makeText(getActivity(),"set the image", Toast.LENGTH_SHORT).show();
             return false;
         }
     });

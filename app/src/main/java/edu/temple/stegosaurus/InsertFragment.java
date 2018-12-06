@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
+import android.database.Cursor;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
@@ -18,6 +19,7 @@ import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.CursorLoader;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -47,8 +49,8 @@ public class InsertFragment extends Fragment {
     ImageView baseImageView, dataImageView;
     Button basePhotoButton, dataPhotoButton, insertButton;
     Context context;
-    String keys[], clientKey, serverKey;
-    Uri baseImageUri, dataImageUri;
+    String clientKey, serverKey;
+    Uri baseImageUri, dataImageUri, encryptedDataUri;
     boolean bigEnough;
 
     private static final int PICK_BASE_IMAGE = 100;
@@ -95,17 +97,39 @@ public class InsertFragment extends Fragment {
             }
         });
 
-        // send data to server
+        // USER: INSERT
         insertButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //checkCapacity();
+                // generate keys
+                String password = keyText.getText().toString();
+                if (password.equals("") || dataImageUri.getPath() == null)
+                    Toast.makeText(getActivity(), "Please provide all inputs", Toast.LENGTH_SHORT).show();
+                else {
+                    String keys[] = EncryptionUtils.generateKeys(password);
+                    clientKey = keys[0];
+                    serverKey = keys[1];
 
-                if(baseImageIsBigEnough())
-                    insertImage();
-                else
-                    Toast.makeText(getActivity(), "Sorry, the base image file is too small", Toast.LENGTH_SHORT).show();
+                    // create input/output files & get their paths
+                    File inputFile = new File(getRealPathFromURI(dataImageUri));
+                    File outputFile = new File(getActivity().getExternalFilesDir(null) + "/encrypted");
+                    Log.i("encrypt", "input: " + inputFile);
+                    Log.i("encrypt", "output: " + outputFile);
 
+                    try {   // try to encrypt the data
+                        EncryptionUtils.encrypt(clientKey, inputFile, outputFile);
+
+                        encryptedDataUri = Uri.fromFile(outputFile);
+
+                        if (baseImageIsBigEnough())
+                            insertImage();
+                        else
+                            Toast.makeText(getActivity(), "Sorry, the base image file is too small", Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        Toast.makeText(getActivity(), "Sorry, we couldn't encrypt the data", Toast.LENGTH_SHORT).show();
+                    }
+                }
             }
         });
 
@@ -135,7 +159,7 @@ public class InsertFragment extends Fragment {
      *  Stegosaurus API functions
      */
 
-    // inputs: baseImageUri, dataImageUri, key
+    // inputs: baseImageUri, encryptedDataUri, serverKey
     // outputs: a link to an image file
     public void insertImage() {
 
@@ -145,15 +169,15 @@ public class InsertFragment extends Fragment {
         Retrofit retrofit = builder.build();
         StegosaurusService client = retrofit.create(StegosaurusService.class);
 
-        serverKey = "wonderful";
+
 
         // ensure we have all needed inputs
-        if(baseImageUri == null || dataImageUri == null || serverKey.equals(""))
+        if(baseImageUri == null || encryptedDataUri == null)
             Toast.makeText(getActivity(), "Please provide all inputs", Toast.LENGTH_SHORT).show();
         else {
             if (ContextCompat.checkSelfPermission(v.getContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
 
-                Call<String> call = client.insertPhoto(prepareFilePart("image", baseImageUri), prepareFilePart("content", dataImageUri), serverKey);
+                Call<String> call = client.insertPhoto(prepareFilePart("image", baseImageUri), prepareFilePart("content", encryptedDataUri), serverKey);
 
                 call.enqueue(new Callback<String>() {
                     @Override
@@ -175,51 +199,6 @@ public class InsertFragment extends Fragment {
                 });
 
                 }
-            else
-                Toast.makeText(getActivity(), "external storage: " + isExternalStorageWritable(), Toast.LENGTH_SHORT).show();
-
-        }
-    }
-
-    // get the storage capacity of an image
-    public void checkCapacity() {
-        Retrofit.Builder builder = new Retrofit.Builder()
-                .baseUrl("https://stegosaurus.ml/api/")
-                .addConverterFactory(GsonConverterFactory.create());
-        Retrofit retrofit = builder.build();
-        StegosaurusService client = retrofit.create(StegosaurusService.class);
-        if(baseImageUri != null && dataImageUri != null) {
-            if (ContextCompat.checkSelfPermission(v.getContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-                Call<String> call = client.getCapacity(prepareFilePart("image", baseImageUri), false);
-                call.enqueue(new Callback<String>() {
-                    @Override
-                    public void onResponse(Call<String> call, Response<String> response) {
-                        //Toast.makeText(getActivity(), "Storage: " + response.body(), Toast.LENGTH_SHORT).show();
-                        int capacity = Integer.parseInt(response.body());
-
-                        try {
-                            AssetFileDescriptor afd = getActivity().getContentResolver().openAssetFileDescriptor(dataImageUri, "r");
-                            long fileSize = afd.getLength();
-                            afd.close();
-
-                            Log.i("dataCheck", "capacity: " + capacity);
-                            Log.i("dataCheck", "data: " + fileSize);
-
-                            // checks whether it's big enough
-                            bigEnough = capacity > fileSize;
-
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(Call<String> call, Throwable t) {
-                        Toast.makeText(getActivity(), "Can't get capacity", Toast.LENGTH_SHORT).show();
-                        Log.i("Throwable", t.toString());
-                    }
-                });
-            }
             else
                 Toast.makeText(getActivity(), "external storage: " + isExternalStorageWritable(), Toast.LENGTH_SHORT).show();
 
@@ -253,9 +232,19 @@ public class InsertFragment extends Fragment {
      *  Helper functions
      */
 
+    private String getRealPathFromURI(Uri contentUri) {
+        String[] proj = { MediaStore.Images.Media.DATA };
+        CursorLoader loader = new CursorLoader(getActivity(), contentUri, proj, null, null, null);
+        Cursor cursor = loader.loadInBackground();
+        int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+        cursor.moveToFirst();
+        String result = cursor.getString(column_index);
+        cursor.close();
+        return result;
+    }
+
     public boolean baseImageIsBigEnough(){
         boolean retval = false;
-
 
         try {
             // getting height, width, and afd
@@ -266,7 +255,7 @@ public class InsertFragment extends Fragment {
             int imageWidth = options.outWidth;
             int imageHeight = options.outHeight;
 
-            AssetFileDescriptor afd = getActivity().getContentResolver().openAssetFileDescriptor(dataImageUri, "r");
+            AssetFileDescriptor afd = getActivity().getContentResolver().openAssetFileDescriptor(encryptedDataUri, "r");
 
             Log.i("dataCheck", "the height: " + imageHeight);
             Log.i("dataCheck", "width: " + imageWidth);
