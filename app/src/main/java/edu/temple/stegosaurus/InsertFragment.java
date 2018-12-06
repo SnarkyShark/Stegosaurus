@@ -113,16 +113,22 @@ public class InsertFragment extends Fragment {
                     // create input/output files & get their paths
                     File inputFile = new File(getRealPathFromURI(dataImageUri));
                     File outputFile = new File(getActivity().getExternalFilesDir(null) + "/encrypted");
-                    Log.i("encrypt", "input: " + inputFile);
-                    Log.i("encrypt", "output: " + outputFile);
+                    Log.i("madeit", "input: " + inputFile);
+                    Log.i("madeit", "output: " + outputFile);
 
                     try {   // try to encrypt the data
+                        Log.i("madeit", "---reset---");
+
                         EncryptionUtils.encrypt(clientKey, inputFile, outputFile);
+                        Log.i("madeit", "outputFile: " + outputFile);
 
                         encryptedDataUri = Uri.fromFile(outputFile);
+                        Log.i("madeit", "encrypted: " + encryptedDataUri);
 
-                        if (baseImageIsBigEnough())
+                        if (baseImageIsBigEnough()) {
                             insertImage();
+
+                        }
                         else
                             Toast.makeText(getActivity(), "Sorry, the base image file is too small", Toast.LENGTH_SHORT).show();
                     } catch (Exception e) {
@@ -169,15 +175,21 @@ public class InsertFragment extends Fragment {
         Retrofit retrofit = builder.build();
         StegosaurusService client = retrofit.create(StegosaurusService.class);
 
-
-
         // ensure we have all needed inputs
         if(baseImageUri == null || encryptedDataUri == null)
             Toast.makeText(getActivity(), "Please provide all inputs", Toast.LENGTH_SHORT).show();
         else {
             if (ContextCompat.checkSelfPermission(v.getContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
 
+                Log.i("madeit", "we have permission");
+                Log.i("madeit", "base: " + baseImageUri);
+                Log.i("madeit", "encrypted: " + encryptedDataUri);
+
+
                 Call<String> call = client.insertPhoto(prepareFilePart("image", baseImageUri), prepareFilePart("content", encryptedDataUri), serverKey);
+
+                Log.i("madeit", "we called your mom");
+
 
                 call.enqueue(new Callback<String>() {
                     @Override
@@ -280,13 +292,23 @@ public class InsertFragment extends Fragment {
     // Convert a file uri to a MultipartBody.part
     private MultipartBody.Part prepareFilePart(String partName, Uri fileUri) {
         File file = FileUtils.getFile(getActivity(), fileUri);
+        RequestBody requestFile;
 
         // create RequestBody instance from file
-        RequestBody requestFile =
-                RequestBody.create(
-                        MediaType.parse(getActivity().getContentResolver().getType(fileUri)),
-                        file
-                );
+        if(partName.equals("content")){
+            requestFile =
+                    RequestBody.create(
+                            MediaType.parse("application/octet-stream"),
+                            file
+                    );
+        }
+        else {
+            requestFile =
+                    RequestBody.create(
+                            MediaType.parse(getActivity().getContentResolver().getType(fileUri)),
+                            file
+                    );
+        }
 
         // MultipartBody.Part is used to send also the actual file name
         return MultipartBody.Part.createFormData(partName, file.getName(), requestFile);
