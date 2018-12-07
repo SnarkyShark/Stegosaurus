@@ -61,6 +61,7 @@ public class ExtractFragment extends Fragment {
     Context context;
     String keys[], stegoImageLink, clientKey, serverKey;
     Uri stegoImageUri;
+    File outputFile;
 
     private static final int PICK_STEGO_IMAGE = 100;
 
@@ -165,6 +166,7 @@ public class ExtractFragment extends Fragment {
                 public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                     boolean success = writeResponseBodyToDisk(response.body());
                     Toast.makeText(getActivity(), "File downloaded: " + success, Toast.LENGTH_SHORT).show();
+                    //openFile();  We'll save this for later
                 }
 
                 @Override
@@ -265,7 +267,7 @@ public class ExtractFragment extends Fragment {
                     Log.d(TAG, "file download: " + fileSizeDownloaded + " of " + fileSize);
 
                     // decrypt data
-                    File outputFile = new File(getActivity().getExternalFilesDir(null) + "/decrypted." + fileExt(inputFile.getPath()));
+                    outputFile = new File(getActivity().getExternalFilesDir(null) + "/decrypted." + fileExt(inputFile.getPath()));
                     Log.i("madeit", "input: " + inputFile);
                     Log.i("madeit", "output: " + outputFile);
 
@@ -283,21 +285,6 @@ public class ExtractFragment extends Fragment {
                     Log.i("path", "output: " + outputFile.getPath());
                     Log.i("path", "fileExt: " + fileExt(outputFile.getPath()));
                     // link: https://stegosaurus.ml/img/1544208381592.png
-
-                    MimeTypeMap myMime = MimeTypeMap.getSingleton();
-                    Intent newIntent = new Intent(Intent.ACTION_VIEW);
-                    String mimeType = myMime.getMimeTypeFromExtension(fileExt(outputFile.getPath()));
-                    Log.i("path", "mimetype: " + mimeType);
-
-
-                    newIntent.setDataAndType(Uri.fromFile(outputFile), mimeType);
-                    newIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
-                    try {
-                        getActivity().startActivity(newIntent);
-                    } catch (Exception e) {
-                        Toast.makeText(getActivity(), "Couldn't launch activity", Toast.LENGTH_LONG).show();
-                    }
 
                     //SET IMAGE
                     Message msg = Message.obtain();
@@ -322,6 +309,27 @@ public class ExtractFragment extends Fragment {
         } catch (IOException e) {
             return false;
         }
+    }
+
+    public void openFile() {
+        if (outputFile != null) {
+            MimeTypeMap myMime = MimeTypeMap.getSingleton();
+            Intent newIntent = new Intent(Intent.ACTION_VIEW);
+            String mimeType = myMime.getMimeTypeFromExtension(fileExt(outputFile.getPath()));
+            Log.i("path", "mimetype: " + mimeType);
+
+
+            newIntent.setDataAndType(Uri.fromFile(outputFile), mimeType);
+            newIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+            try {
+                getActivity().startActivity(newIntent);
+            } catch (Exception e) {
+                Toast.makeText(getActivity(), "Couldn't launch activity", Toast.LENGTH_LONG).show();
+            }
+        }
+        else
+            Log.i("issue: ", "output doesn't yet exist");
     }
 
     /**

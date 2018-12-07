@@ -32,7 +32,7 @@ public interface StegosaurusService {
 
     @Multipart
     @POST("insert")
-    Call<String> insertPhoto(@Part MultipartBody.Part image, @Part MultipartBody.Part content, @Query("key") String key);
+    Call<String> insertData(@Part MultipartBody.Part image, @Part MultipartBody.Part content, @Query("key") String key);
 
     @Multipart
     @POST("extract")

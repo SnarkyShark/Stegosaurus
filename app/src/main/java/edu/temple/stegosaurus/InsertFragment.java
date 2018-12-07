@@ -7,7 +7,6 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.content.res.AssetFileDescriptor;
 import android.database.Cursor;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -30,6 +29,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import java.io.File;
+import java.io.FileOutputStream;
+
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
@@ -45,12 +46,12 @@ public class InsertFragment extends Fragment {
     // View Elements
     View v;
     TextView t;
-    EditText keyText;
+    EditText keyText, messageText;
     ImageView baseImageView, dataImageView;
     Button basePhotoButton, dataPhotoButton, insertButton;
     Context context;
     String clientKey, serverKey;
-    Uri baseImageUri, dataImageUri, encryptedDataUri;
+    Uri baseImageUri, dataImageUri, dataUri, encryptedDataUri;
     boolean bigEnough;
     File outputFile;
 
@@ -70,6 +71,7 @@ public class InsertFragment extends Fragment {
         v = inflater.inflate(R.layout.fragment_insert, container, false);
         t = v.findViewById(R.id.encryptTime);
         keyText = v.findViewById(R.id.keyEditText);
+        messageText = v.findViewById(R.id.msgEditText);
         baseImageView = v.findViewById(R.id.basePhotoView);
         dataImageView = v.findViewById(R.id.dataPhotoView);
         basePhotoButton = v.findViewById(R.id.basePhotoButton);
@@ -104,18 +106,47 @@ public class InsertFragment extends Fragment {
             public void onClick(View v) {
                 // generate keys
                 String password = keyText.getText().toString();
+                String message = messageText.getText().toString();
 
                 // ensure inputs
-                if (password.equals("") || dataImageUri.getPath() == null)
+                if (password.equals("") || (dataImageUri == null && message.equals("")))
                     Toast.makeText(getActivity(), "Please provide all inputs", Toast.LENGTH_SHORT).show();
                 else {
+                    File inputFile = new File(getActivity().getFilesDir().toString());
+
+                    if(dataImageUri != null) {    // if inserting an image
+                        Log.i("filetest", "it's a image file");
+                        inputFile = new File(getRealPathFromURI(dataImageUri));
+                    }
+                    if(dataImageUri == null) // if inserting a text file (or, eventually, other data)
+                    {
+
+                        Log.i("filetest", "it's a text file");
+                        File dataTextFile = new File(getActivity().getExternalFilesDir(null) + "/data.txt");
+
+                        try {
+                            FileOutputStream stream = new FileOutputStream(dataTextFile);
+                            try {
+                                stream.write(message.getBytes());
+                            } finally {
+                                stream.close();
+                            }
+
+                            dataUri = Uri.fromFile(dataTextFile);
+                            Log.i("filetest", "dataUri: " + dataUri);
+                            inputFile = new File(dataUri.getPath());
+
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+
                     String keys[] = EncryptionUtils.generateKeys(password);
                     clientKey = keys[0];
                     serverKey = keys[1];
 
                     // create input/output files & get their paths
-                    File inputFile = new File(getRealPathFromURI(dataImageUri));
-                    outputFile = new File(getActivity().getExternalFilesDir(null) + "/encrypted");
+                    outputFile = new File(getActivity().getExternalFilesDir(null) + "/encrypted." + fileExt(inputFile.getPath()));
                     Log.i("madeit", "input: " + inputFile);
                     Log.i("madeit", "output: " + outputFile);
 
@@ -129,8 +160,7 @@ public class InsertFragment extends Fragment {
                         Log.i("madeit", "encrypted: " + encryptedDataUri);
 
                         if (baseImageIsBigEnough()) {
-                            insertImage();
-
+                            insertFile();
                         }
                         else
                             Toast.makeText(getActivity(), "Sorry, the base image file is too small", Toast.LENGTH_SHORT).show();
@@ -170,7 +200,7 @@ public class InsertFragment extends Fragment {
 
     // inputs: baseImageUri, encryptedDataUri, serverKey
     // outputs: a link to an image file
-    public void insertImage() {
+    public void insertFile() {
 
         Retrofit.Builder builder = new Retrofit.Builder()
                 .baseUrl("https://stegosaurus.ml/api/")
@@ -189,7 +219,7 @@ public class InsertFragment extends Fragment {
                 Log.i("madeit", "encrypted: " + encryptedDataUri);
 
 
-                Call<String> call = client.insertPhoto(prepareFilePart("image", baseImageUri), prepareFilePart("content", encryptedDataUri), serverKey);
+                Call<String> call = client.insertData(prepareFilePart("image", baseImageUri), prepareFilePart("content", encryptedDataUri), serverKey);
 
                 Log.i("madeit", "we called your mom");
 
@@ -218,29 +248,6 @@ public class InsertFragment extends Fragment {
                 Toast.makeText(getActivity(), "external storage: " + isExternalStorageWritable(), Toast.LENGTH_SHORT).show();
 
         }
-    }
-
-    // check if we can connect to the server
-    public void pingServer() {
-        Retrofit.Builder builder = new Retrofit.Builder()
-                .baseUrl("https://stegosaurus.ml/api/")
-                .addConverterFactory(GsonConverterFactory.create());
-        Retrofit retrofit = builder.build();
-        StegosaurusService client = retrofit.create(StegosaurusService.class);
-        Call<String> call = client.basicResponse();
-        call.enqueue(new Callback<String>() {
-            @Override
-            public void onResponse(Call<String> call, Response<String> response) {
-                Toast.makeText(getActivity(), "Response: " + response.body(), Toast.LENGTH_SHORT).show();
-
-            }
-
-            @Override
-            public void onFailure(Call<String> call, Throwable t) {
-                Toast.makeText(getActivity(), "Failed", Toast.LENGTH_SHORT).show();
-
-            }
-        });
     }
 
     /**
@@ -328,6 +335,25 @@ public class InsertFragment extends Fragment {
             return true;
         }
         return false;
+    }
+
+    private String fileExt(String url) {
+        if (url.indexOf("?") > -1) {
+            url = url.substring(0, url.indexOf("?"));
+        }
+        if (url.lastIndexOf(".") == -1) {
+            return null;
+        } else {
+            String ext = url.substring(url.lastIndexOf(".") + 1);
+            if (ext.indexOf("%") > -1) {
+                ext = ext.substring(0, ext.indexOf("%"));
+            }
+            if (ext.indexOf("/") > -1) {
+                ext = ext.substring(0, ext.indexOf("/"));
+            }
+            return ext.toLowerCase();
+
+        }
     }
 
     /**
