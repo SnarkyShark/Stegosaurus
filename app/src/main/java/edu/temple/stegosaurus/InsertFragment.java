@@ -52,6 +52,7 @@ public class InsertFragment extends Fragment {
     String clientKey, serverKey;
     Uri baseImageUri, dataImageUri, encryptedDataUri;
     boolean bigEnough;
+    File outputFile;
 
     private static final int PICK_BASE_IMAGE = 100;
     private static final int PICK_DATA_IMAGE = 101;
@@ -114,7 +115,7 @@ public class InsertFragment extends Fragment {
 
                     // create input/output files & get their paths
                     File inputFile = new File(getRealPathFromURI(dataImageUri));
-                    File outputFile = new File(getActivity().getExternalFilesDir(null) + "/encrypted");
+                    outputFile = new File(getActivity().getExternalFilesDir(null) + "/encrypted");
                     Log.i("madeit", "input: " + inputFile);
                     Log.i("madeit", "output: " + outputFile);
 
@@ -269,13 +270,11 @@ public class InsertFragment extends Fragment {
             int imageWidth = options.outWidth;
             int imageHeight = options.outHeight;
 
-            AssetFileDescriptor afd = getActivity().getContentResolver().openAssetFileDescriptor(encryptedDataUri, "r");
-
             Log.i("dataCheck", "the height: " + imageHeight);
             Log.i("dataCheck", "width: " + imageWidth);
 
             int capacity = (imageHeight - (imageHeight % 32)) * (imageWidth - (imageWidth % 32));
-            int size = (int) afd.getLength() * 5;   // 5 is super arbitrary
+            int size = (int) outputFile.length() * 8;   // bits to bytes
 
 
             Log.i("dataCheck", "capacity: " + capacity);

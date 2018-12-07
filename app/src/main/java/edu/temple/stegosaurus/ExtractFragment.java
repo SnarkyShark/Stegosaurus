@@ -2,6 +2,7 @@ package edu.temple.stegosaurus;
 
 
 import android.Manifest;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -17,6 +18,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.MimeTypeMap;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -79,6 +81,7 @@ public class ExtractFragment extends Fragment {
         extractImageView = v.findViewById(R.id.stegoImageView);
         selectPhotoButton = v.findViewById(R.id.selectStegoButton);
         extractButton = v.findViewById(R.id.extractButton);
+        context = getActivity();
 
         // set default image
         extractImageView.setImageResource(R.drawable.file_logo);
@@ -209,6 +212,25 @@ public class ExtractFragment extends Fragment {
         return false;
     }
 
+    private String fileExt(String url) {
+        if (url.indexOf("?") > -1) {
+            url = url.substring(0, url.indexOf("?"));
+        }
+        if (url.lastIndexOf(".") == -1) {
+            return null;
+        } else {
+            String ext = url.substring(url.lastIndexOf(".") + 1);
+            if (ext.indexOf("%") > -1) {
+                ext = ext.substring(0, ext.indexOf("%"));
+            }
+            if (ext.indexOf("/") > -1) {
+                ext = ext.substring(0, ext.indexOf("/"));
+            }
+            return ext.toLowerCase();
+
+        }
+    }
+
     // Code from: https://futurestud.io/tutorials/retrofit-2-how-to-download-files-from-server
     private boolean writeResponseBodyToDisk(ResponseBody body) {
         try {
@@ -243,10 +265,12 @@ public class ExtractFragment extends Fragment {
                     Log.d(TAG, "file download: " + fileSizeDownloaded + " of " + fileSize);
 
                     // decrypt data
-                    File outputFile = new File(getActivity().getExternalFilesDir(null) + "/decrypted.png");
+                    File outputFile = new File(getActivity().getExternalFilesDir(null) + "/decrypted." + fileExt(inputFile.getPath()));
                     Log.i("madeit", "input: " + inputFile);
                     Log.i("madeit", "output: " + outputFile);
 
+
+                    // TODO: get filename from the server
                     try {   // try to decrypt the data
                         EncryptionUtils.decrypt(clientKey, inputFile, outputFile);
                         Log.i("madeit", "outputFile: " + outputFile);
@@ -254,6 +278,25 @@ public class ExtractFragment extends Fragment {
                     } catch (Exception e) {
                             e.printStackTrace();
                             Toast.makeText(getActivity(), "Sorry, we couldn't decrypt the data", Toast.LENGTH_SHORT).show();
+                    }
+
+                    Log.i("path", "output: " + outputFile.getPath());
+                    Log.i("path", "fileExt: " + fileExt(outputFile.getPath()));
+                    // link: https://stegosaurus.ml/img/1544208381592.png
+
+                    MimeTypeMap myMime = MimeTypeMap.getSingleton();
+                    Intent newIntent = new Intent(Intent.ACTION_VIEW);
+                    String mimeType = myMime.getMimeTypeFromExtension(fileExt(outputFile.getPath()));
+                    Log.i("path", "mimetype: " + mimeType);
+
+
+                    newIntent.setDataAndType(Uri.fromFile(outputFile), mimeType);
+                    newIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+                    try {
+                        getActivity().startActivity(newIntent);
+                    } catch (Exception e) {
+                        Toast.makeText(getActivity(), "Couldn't launch activity", Toast.LENGTH_LONG).show();
                     }
 
                     //SET IMAGE
