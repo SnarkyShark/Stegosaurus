@@ -31,6 +31,7 @@ import com.google.gson.GsonBuilder;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -165,7 +166,6 @@ public class ExtractFragment extends Fragment {
                 @Override
                 public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                     boolean success = writeResponseBodyToDisk(response.body());
-                    Toast.makeText(getActivity(), "File downloaded: " + success, Toast.LENGTH_SHORT).show();
                     //openFile();  We'll save this for later
                 }
 
@@ -236,10 +236,17 @@ public class ExtractFragment extends Fragment {
     // Code from: https://futurestud.io/tutorials/retrofit-2-how-to-download-files-from-server
     private boolean writeResponseBodyToDisk(ResponseBody body) {
         try {
-            // todo change the file location/name according to your needs
+            String type = body.contentType().type();
+            String extension;
+            if(type.equals("text"))
+                extension = "txt";
+            else
+                extension = "png";
+            Log.i("madeit", "real type: " + type);
+
             File inputFile = new File(
                     Environment.getExternalStoragePublicDirectory(
-                            Environment.DIRECTORY_DOWNLOADS), "dataImage.png");
+                            Environment.DIRECTORY_DOWNLOADS), "dataImage." + extension);
 
             InputStream inputStream = null;
             OutputStream outputStream = null;
@@ -286,10 +293,28 @@ public class ExtractFragment extends Fragment {
                     Log.i("path", "fileExt: " + fileExt(outputFile.getPath()));
                     // link: https://stegosaurus.ml/img/1544208381592.png
 
-                    //SET IMAGE
-                    Message msg = Message.obtain();
-                    msg.obj = outputFile.toString();
-                    imageViewHandler.sendMessage(msg);
+                    //SET IMAGE OR SHOW TEXT
+                    if(fileExt(outputFile.getPath()).equals("txt")) {
+                        int length = (int) outputFile.length();
+
+                        byte[] bytes = new byte[length];
+
+                        FileInputStream in = new FileInputStream(outputFile);
+                        try {
+                            in.read(bytes);
+                        } finally {
+                            in.close();
+                        }
+
+                        String contents = new String(bytes);
+                        Toast.makeText(getActivity(), contents, Toast.LENGTH_SHORT).show();
+
+                    }
+                    else {
+                        Message msg = Message.obtain();
+                        msg.obj = outputFile.toString();
+                        imageViewHandler.sendMessage(msg);
+                    }
                 }
 
                 outputStream.flush();

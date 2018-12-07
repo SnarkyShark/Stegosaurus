@@ -109,7 +109,7 @@ public class InsertFragment extends Fragment {
                 String message = messageText.getText().toString();
 
                 // ensure inputs
-                if (password.equals("") || (dataImageUri == null && message.equals("")))
+                if (password.equals("") || (dataImageUri == null && message.equals("")) || baseImageUri == null)
                     Toast.makeText(getActivity(), "Please provide all inputs", Toast.LENGTH_SHORT).show();
                 else {
                     File inputFile = new File(getActivity().getFilesDir().toString());
