@@ -20,16 +20,6 @@ import retrofit2.http.Query;
 
 public interface StegosaurusService {
 
-    @GET("test")
-    Call<String> basicResponse();
-
-    @POST("test")
-    Call<String> echoResponse(@Query("message") String message);
-
-    @Multipart
-    @POST("get_capacity")
-    Call<String> getCapacity(@Part MultipartBody.Part theImage, @Query("formatted") boolean formatted);
-
     @Multipart
     @POST("insert")
     Call<String> insertData(@Part MultipartBody.Part image, @Part MultipartBody.Part content, @Query("key") String key);
