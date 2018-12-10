@@ -184,7 +184,10 @@ public class ExtractFragment extends Fragment {
 
                 @Override
                 public void onFailure(Call<ResponseBody> call, Throwable t) {
-                    Toast.makeText(getActivity(), "Can't extract data", Toast.LENGTH_SHORT).show();
+                    if(t.toString().equals("java.net.SocketTimeoutException: timeout"))
+                        Toast.makeText(getActivity(), "Sorry, this is taking too long. Ending process.", Toast.LENGTH_SHORT).show();
+                    else
+                        Toast.makeText(getActivity(), "Can't extract data", Toast.LENGTH_SHORT).show();
                     Log.i("Throwable", t.toString());
                 }
             });
