@@ -37,9 +37,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.Blob;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
@@ -143,11 +145,18 @@ public class ExtractFragment extends Fragment {
     // outputs: uri to data file
     public void extractData() {
 
+        OkHttpClient.Builder timeClient = new OkHttpClient.Builder();
+        timeClient.connectTimeout(30, TimeUnit.SECONDS);
+        timeClient.readTimeout(30, TimeUnit.SECONDS);
+        timeClient.writeTimeout(30, TimeUnit.SECONDS);
+
         // create retrofit object
         Retrofit.Builder builder = new Retrofit.Builder()
                 .baseUrl("https://stegosaurus.ml/api/")
-                .addConverterFactory(GsonConverterFactory.create());
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(timeClient.build());
         Retrofit retrofit = builder.build();
+
         StegosaurusService client = retrofit.create(StegosaurusService.class);
 
         // we have write permission
@@ -165,7 +174,11 @@ public class ExtractFragment extends Fragment {
             call.enqueue(new Callback<ResponseBody>() {
                 @Override
                 public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                    boolean success = writeResponseBodyToDisk(response.body());
+                    boolean success = false;
+                    if(response.code() == 200)
+                        success = writeResponseBodyToDisk(response.body());
+                    else
+                        Toast.makeText(getActivity(), "It's possible you entered the wrong password / the image has no data", Toast.LENGTH_LONG).show();
                     //openFile();  We'll save this for later
                 }
 
@@ -238,15 +251,18 @@ public class ExtractFragment extends Fragment {
         try {
             String type = body.contentType().type();
             String extension;
-            if(type.equals("text"))
-                extension = "txt";
-            else
-                extension = "png";
+            if (type.equals("text"))
+                extension = ".txt";
+            else if (type.equals("image"))
+                extension = ".png";
+            else {
+                extension = "";
+            }
             Log.i("madeit", "real type: " + type);
 
             File inputFile = new File(
                     Environment.getExternalStoragePublicDirectory(
-                            Environment.DIRECTORY_DOWNLOADS), "dataImage." + extension);
+                            Environment.DIRECTORY_DOWNLOADS), "dataImage" + extension);
 
             InputStream inputStream = null;
             OutputStream outputStream = null;
@@ -286,7 +302,7 @@ public class ExtractFragment extends Fragment {
 
                     } catch (Exception e) {
                             e.printStackTrace();
-                            Toast.makeText(getActivity(), "Sorry, we couldn't decrypt the data", Toast.LENGTH_SHORT).show();
+                            //Toast.makeText(getActivity(), "Sorry, we couldn't decrypt the data", Toast.LENGTH_SHORT).show();
                     }
 
                     Log.i("path", "output: " + outputFile.getPath());

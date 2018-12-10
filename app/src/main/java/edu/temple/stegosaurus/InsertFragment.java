@@ -30,9 +30,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -202,10 +204,17 @@ public class InsertFragment extends Fragment {
     // outputs: a link to an image file
     public void insertFile() {
 
+        OkHttpClient.Builder timeClient = new OkHttpClient.Builder();
+        timeClient.connectTimeout(30, TimeUnit.SECONDS);
+        timeClient.readTimeout(30, TimeUnit.SECONDS);
+        timeClient.writeTimeout(30, TimeUnit.SECONDS);
+
         Retrofit.Builder builder = new Retrofit.Builder()
                 .baseUrl("https://stegosaurus.ml/api/")
-                .addConverterFactory(GsonConverterFactory.create());
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(timeClient.build());
         Retrofit retrofit = builder.build();
+
         StegosaurusService client = retrofit.create(StegosaurusService.class);
 
         // ensure we have all needed inputs
